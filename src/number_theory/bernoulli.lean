@@ -52,7 +52,7 @@ then defined as `bernoulli = (-1)^n * bernoulli'`.
 -/
 
 open_locale big_operators
-open nat
+open_locale nat
 open finset
 
 /-!
@@ -154,7 +154,7 @@ end
 open power_series
 
 theorem bernoulli'_power_series :
-  power_series.mk (λ n, (bernoulli' n / nat.factorial n : ℚ)) * (exp ℚ - 1) = X * exp ℚ :=
+  power_series.mk (λ n, (bernoulli' n / n! : ℚ)) * (exp ℚ - 1) = X * exp ℚ :=
 begin
   ext n,
   -- constant coefficient is a special case
@@ -177,7 +177,7 @@ begin
   dsimp only,
   have hj : (j : ℚ) + 1 ≠ 0, by { norm_cast, linarith },
   have hj' : j.succ ≠ 0, by { show j + 1 ≠ 0, by linarith },
-  have hnz : (j + 1 : ℚ) * nat.factorial j * nat.factorial i ≠ 0,
+  have hnz : (j + 1 : ℚ) * j! * i! ≠ 0,
   { norm_cast at *,
     exact mul_ne_zero (mul_ne_zero hj (factorial_ne_zero j)) (factorial_ne_zero _), },
   field_simp [hj, hnz],
@@ -195,13 +195,13 @@ open ring_hom
 theorem bernoulli'_odd_eq_zero {n : ℕ} (h_odd : odd n) (hlt : 1 < n) : bernoulli' n = 0 :=
 begin
   have f := bernoulli'_power_series,
-  have g : eval_neg_hom (mk (λ (n : ℕ), bernoulli' n / ↑(n.factorial)) * (exp ℚ - 1)) * (exp ℚ) =
+  have g : eval_neg_hom (mk (λ (n : ℕ), bernoulli' n / ↑n!) * (exp ℚ - 1)) * (exp ℚ) =
     (eval_neg_hom (X * exp ℚ)) * (exp ℚ) := by congr',
   rw [map_mul, map_sub, map_one, map_mul, mul_assoc, sub_mul, mul_assoc (eval_neg_hom X) _ _,
     mul_comm (eval_neg_hom (exp ℚ)) (exp ℚ), exp_mul_exp_neg_eq_one, eval_neg_hom_X, mul_one,
     one_mul] at g,
-  suffices h : (mk (λ (n : ℕ), bernoulli' n / ↑(n.factorial)) - eval_neg_hom (mk (λ (n : ℕ),
-    bernoulli' n / ↑(n.factorial))) ) * (exp ℚ - 1) = X * (exp ℚ - 1),
+  suffices h : (mk (λ (n : ℕ), bernoulli' n / ↑n!) - eval_neg_hom (mk (λ (n : ℕ),
+    bernoulli' n / ↑n!)) ) * (exp ℚ - 1) = X * (exp ℚ - 1),
   { rw [mul_eq_mul_right_iff] at h,
     cases h,
     { simp only [eval_neg_hom, rescale, coeff_mk, coe_mk, power_series.ext_iff,
@@ -210,7 +210,7 @@ begin
       rw coeff_X n at h,
       split_ifs at h with h2,
       { rw h2 at hlt, exfalso, exact lt_irrefl _ hlt, },
-      have hn : (n.factorial : ℚ) ≠ 0, { simp [factorial_ne_zero], },
+      have hn : (n! : ℚ) ≠ 0, { simp [factorial_ne_zero], },
       rw [←mul_div_assoc, sub_eq_zero_iff_eq, div_eq_iff hn, div_mul_cancel _ hn,
         neg_one_pow_of_odd h_odd, neg_mul_eq_neg_mul_symm, one_mul] at h,
       exact eq_zero_of_neg_eq h.symm, },
@@ -258,26 +258,30 @@ begin
   { ring },
 end
 
-
 theorem bernoulli_power_series :
-  (exp ℚ - 1) * power_series.mk (λ n, (bernoulli n / nat.factorial n)) = X :=
- begin
-   sorry,
- end
+  (exp ℚ - 1) * mk (λ n, (bernoulli n / n!)) = X :=
+begin
+  have h: power_series.mk (λ n, (bernoulli' n / n! : ℚ)) * (exp ℚ - 1)
+    = X * exp ℚ :=
+  begin
+    simp only [bernoulli'_power_series],
+  end,
+  sorry,
+end
 
 section faulhaber
 
 lemma aux_cauchy_prod (n : ℕ) :
-mk (λ (p : ℕ), bernoulli p / ↑(p.factorial)) *
+mk (λ (p : ℕ), bernoulli p / ↑p!) *
  mk (λ (q : ℕ), (coeff ℚ (q + 1)) (exp ℚ ^ n))
  = mk (λ (p : ℕ), (finset.range (p + 1)).sum (λ (i : ℕ),
- bernoulli i * ↑((p + 1).choose i) * ↑n ^ (p + 1 - i) / (↑(p + 1).factorial))) :=
+ bernoulli i * ↑((p + 1).choose i) * ↑n ^ (p + 1 - i) / ↑(p + 1)!)) :=
 begin
     ext q,
   rw [power_series.coeff_mul],
   simp only [coeff_mk, coeff_mk, nat.cast_mul],
   let f : ℕ → ℕ → ℚ := λ (a : ℕ), λ (b : ℕ),
-  bernoulli a / ↑(a.factorial) * (coeff ℚ (b + 1)) (exp ℚ ^ n),
+  bernoulli a / ↑a! * (coeff ℚ (b + 1)) (exp ℚ ^ n),
   rw [finset.nat.sum_antidiagonal_eq_sum_range_succ f],
   refine finset.sum_congr _ _,
   { refl, },
@@ -286,7 +290,7 @@ begin
       ring_hom.id_apply, nat.cast_mul, rat.algebra_map_rat_rat],
     simp only [finset.mem_range] at h,
     rw [nat.choose_eq_factorial_div_factorial (le_of_lt h)],
-    have hq : (q.succ.factorial : ℚ) ≠ 0,
+    have hq : (q.succ! : ℚ) ≠ 0,
     { by_contradiction g,
       simp only [not_not, nat.cast_succ, nat.factorial_succ, nat.cast_eq_zero,
         nat.cast_mul, mul_eq_zero] at g,
@@ -299,8 +303,8 @@ begin
     { rw [nat.sub_add_comm],
       apply nat.le_of_lt_succ,
       exact h, },
-    rw [nat.succ_eq_add_one, mul_assoc _ _ ↑(q.succ.factorial),
-      mul_comm _ ↑(q.succ.factorial), ←mul_assoc, div_mul_eq_mul_div,
+    rw [nat.succ_eq_add_one, mul_assoc _ _ ↑(q.succ!),
+      mul_comm _ ↑(q.succ!), ←mul_assoc, div_mul_eq_mul_div,
       mul_comm (n ^ (q - m + 1) : ℚ) _, ←mul_assoc _ _ (n ^ (q - m + 1) : ℚ), ←one_div, mul_one_div,
       div_div_eq_div_mul, hqm1],
     rw [nat.cast_dvd],
@@ -314,9 +318,9 @@ end
 
 lemma aux_power_series_equal (n : ℕ) :
   (exp ℚ - 1) * power_series.mk (λ p, (finset.range n).sum (λ k,
-  (k : ℚ)^p * algebra_map ℚ ℚ p.factorial⁻¹)) =
+  (k : ℚ)^p * algebra_map ℚ ℚ p!⁻¹)) =
   (exp ℚ - 1) * power_series.mk (λ p, (finset.range (p + 1)).sum(λ i,
-  (bernoulli i) * ((p + 1).choose i) * n^(p + 1 - i)/((p + 1).factorial))) :=
+  (bernoulli i) * ((p + 1).choose i) * n^(p + 1 - i)/((p + 1)!))) :=
 begin
   rw [←exp_pow_sum n],
   have h_geom_sum : (geom_series (exp ℚ) n) * (exp ℚ - 1) = (exp ℚ)^n - 1 := geom_sum_mul _ _,
@@ -336,9 +340,9 @@ theorem faulhaber (n p : ℕ) :
 (finset.range (p + 1)).sum(λ i, (bernoulli i) * ((p + 1).choose i) * n^(p + 1 - i)/(p + 1)) :=
 begin
   have hpseq : power_series.mk (λ p, (finset.range n).sum (λ k,
-    (k : ℚ)^p * algebra_map ℚ ℚ p.factorial⁻¹)) =
+    (k : ℚ)^p * algebra_map ℚ ℚ p!⁻¹)) =
     power_series.mk (λ p, (finset.range (p + 1)).sum(λ i,
-      (bernoulli i) * ((p + 1).choose i) * n^(p + 1 - i)/((p + 1).factorial))),
+      (bernoulli i) * ((p + 1).choose i) * n^(p + 1 - i)/((p + 1)!))),
   { have hexp : exp ℚ - 1 ≠ 0,
     { rw [exp],
       simp only [power_series.ext_iff, linear_map.map_zero, one_div, coeff_mk, coeff_one,
@@ -364,7 +368,7 @@ begin
   refine finset.sum_congr rfl _,
   intros x hx,
   ring,
-  have hfrac : ↑(p.factorial) * (↑(p + 1).factorial)⁻¹ = ((p + 1 : ℚ))⁻¹,
+  have hfrac : ↑(p!) * (↑(p + 1)!)⁻¹ = ((p + 1 : ℚ))⁻¹,
   { simp only [←one_div, mul_one_div],
     rw [eq_comm, div_eq_iff hp, eq_comm, div_mul_eq_mul_div, div_eq_iff hne_zero'],
     simp only [cast_succ, one_mul, cast_mul, factorial_succ, mul_comm], },
