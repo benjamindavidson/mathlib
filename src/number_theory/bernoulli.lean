@@ -55,6 +55,7 @@ open_locale big_operators
 open_locale nat
 open nat
 open finset
+open_locale nat
 
 /-!
 
@@ -196,13 +197,13 @@ open ring_hom
 theorem bernoulli'_odd_eq_zero {n : ℕ} (h_odd : odd n) (hlt : 1 < n) : bernoulli' n = 0 :=
 begin
   have f := bernoulli'_power_series,
-  have g : eval_neg_hom (mk (λ (n : ℕ), bernoulli' n / ↑n!) * (exp ℚ - 1)) * (exp ℚ) =
+  have g : eval_neg_hom (mk (λ (n : ℕ), bernoulli' n / ↑(n!)) * (exp ℚ - 1)) * (exp ℚ) =
     (eval_neg_hom (X * exp ℚ)) * (exp ℚ) := by congr',
   rw [map_mul, map_sub, map_one, map_mul, mul_assoc, sub_mul, mul_assoc (eval_neg_hom X) _ _,
     mul_comm (eval_neg_hom (exp ℚ)) (exp ℚ), exp_mul_exp_neg_eq_one, eval_neg_hom_X, mul_one,
     one_mul] at g,
-  suffices h : (mk (λ (n : ℕ), bernoulli' n / ↑n!) - eval_neg_hom (mk (λ (n : ℕ),
-    bernoulli' n / ↑n!)) ) * (exp ℚ - 1) = X * (exp ℚ - 1),
+  suffices h : (mk (λ (n : ℕ), bernoulli' n / ↑(n!)) - eval_neg_hom (mk (λ (n : ℕ),
+    bernoulli' n / ↑(n!))) ) * (exp ℚ - 1) = X * (exp ℚ - 1),
   { rw [mul_eq_mul_right_iff] at h,
     cases h,
     { simp only [eval_neg_hom, rescale, coeff_mk, coe_mk, power_series.ext_iff,
