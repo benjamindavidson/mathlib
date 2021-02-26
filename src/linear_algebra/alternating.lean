@@ -708,19 +708,12 @@ begin
   congr' 3,
 end
 
-#check finset.eq_univ_iff_forall.mpr
-
 /-- Taking the `multilinear_map.alternatization` of the `multilinear_map.dom_coprod` of two
 `alternating_map`s gives a scaled version of the `alternating_map.coprod` of those maps.
 -/
 lemma multilinear_map.dom_coprod_alternization_eq
-  {R : Type*} {M N₁ N₂ : Type*}
-  [comm_semiring R]
-  [add_comm_group N₁] [semimodule R N₁]
-  [add_comm_group N₂] [semimodule R N₂]
-  [add_comm_monoid M] [semimodule R M]
-  (a : alternating_map R M N₁ ιa) (b : alternating_map R M N₂ ιb) :
-  (multilinear_map.dom_coprod a b : multilinear_map R (λ _ : ιa ⊕ ιb, M) (N₁ ⊗ N₂))
+  (a : alternating_map R' Mᵢ N₁ ιa) (b : alternating_map R' Mᵢ N₂ ιb) :
+  (multilinear_map.dom_coprod a b : multilinear_map R' (λ _ : ιa ⊕ ιb, Mᵢ) (N₁ ⊗ N₂))
     .alternatization =
     ((fintype.card ιa).factorial * (fintype.card ιb).factorial) • a.dom_coprod b :=
 begin
