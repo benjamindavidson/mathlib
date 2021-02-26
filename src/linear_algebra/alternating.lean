@@ -531,7 +531,7 @@ begin
         propagate_tags' { substs hi hj, }, },
     case [sum.inl sum.inr : i' j', sum.inr sum.inl : i' j'] {
       -- the term pairs with and cancels another term
-      all_goals { obtain ⟨⟨sl, sr⟩, hσ⟩ := quotient.eq'.mp hσ, },
+      all_goals { obtain ⟨⟨sl, sr⟩, hσ⟩ := quotient.exact' hσ, },
       work_on_goal 0 { replace hσ := equiv.congr_fun hσ (sum.inl i'), },
       work_on_goal 1 { replace hσ := equiv.congr_fun hσ (sum.inr i'), },
       all_goals {
