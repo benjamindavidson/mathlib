@@ -43,28 +43,12 @@ using `map_swap` as a definition, and does not require `has_neg N`.
 * `alternating_map.coe_smul`
 -/
 
+-- This can be removed after leanprover-community/lean#540
+meta def tactic.interactive.propagate_tags' : tactic.interactive.itactic → tactic unit :=
+tactic.interactive.propagate_tags
+
 -- TODO: move
 section to_move
-
-namespace tactic
-namespace interactive
-
-open lean.parser
-open interactive
-
-/-- Focus on the first `n` goals. -/
-meta def first_n_goals : parse small_nat → itactic → tactic unit
-| n t := do
-  goals ← get_goals,
-  let current_goals := goals.take n,
-  let later_goals := goals.drop n,
-  set_goals current_goals,
-  t,
-  new_goals ← get_goals,
-  set_goals (new_goals ++ later_goals)
-
-end interactive
-end tactic
 
 open_locale big_operators
 
@@ -563,19 +547,21 @@ begin
       multilinear_map.dom_dom_congr_apply, multilinear_map.dom_coprod_apply],
     apply mt,
     intro hσ,
-    cases hi : σ⁻¹ i with i' i';
-      cases hj : σ⁻¹ j with j' j';
-      rw perm.inv_eq_iff_eq at hi hj;
-      substs hi hj,
-    rotate,
-    first_n_goals 2 { -- the term pairs with and cancels another term
+    with_cases {
+      cases hi : σ⁻¹ i;
+        cases hj : σ⁻¹ j;
+        rw perm.inv_eq_iff_eq at hi hj;
+        propagate_tags' { substs hi hj, }, },
+    case [sum.inl sum.inr : i' j', sum.inr sum.inl : i' j'] {
+      -- the term pairs with and cancels another term
       all_goals { obtain ⟨⟨sl, sr⟩, hσ⟩ := quotient.eq'.mp hσ, },
       work_on_goal 0 { replace hσ := equiv.congr_fun hσ (sum.inl i'), },
       work_on_goal 1 { replace hσ := equiv.congr_fun hσ (sum.inr i'), },
       all_goals {
         rw [←equiv.mul_swap_eq_swap_mul, mul_inv_rev, equiv.swap_inv, inv_mul_cancel_right] at hσ,
         simpa using hσ, }, },
-    first_n_goals 2 { -- the term does not pair but is zero
+    case [sum.inr sum.inr : i' j', sum.inl sum.inl : i' j'] {
+      -- the term does not pair but is zero
       all_goals { convert smul_zero _, },
       work_on_goal 0 { convert tensor_product.tmul_zero _ _, },
       work_on_goal 1 { convert tensor_product.zero_tmul _ _, },
