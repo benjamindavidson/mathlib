@@ -10,11 +10,11 @@ import data.set.finite
 /-!
 # Hall's Marriage Theorem
 
-Given a list of finite subsets $$X_1,X_2,\dots,X_n$$ of some given set
-$$S$$, Hall in [Hall1935] gave a necessary and sufficient condition
-for there to be a list of distinct elements $$x_1,x_2,\dots,x_n$$ with
-$$x_i\in X_i$$ for each $$i$$: it is when the union of any $$k$$ of
-these subsets has at least $$k$$ elements.
+Given a list of finite subsets $X_1,X_2,\dots,X_n$ of some given set
+$S$, Hall in [Hall1935] gave a necessary and sufficient condition for
+there to be a list of distinct elements $x_1,x_2,\dots,x_n$ with
+$x_i\in X_i$ for each $i$: it is when for each $k$, the union of every
+$k$ of these subsets has at least $k$ elements.
 
 This file proves this for an indexed family `t : ι → finset α` of
 finite sets, with `[fintype ι]`, along with some variants of the
@@ -125,7 +125,7 @@ begin
       specialize hfr x,
       rw ←h at hfr,
       simpa using hfr, },
-    by_cases h₁ : z₁ = x; by_cases h₂ : z₂ = x; simp [h₁, h₂, hfinj, key, key.symm], },
+    by_cases h₁ : z₁ = x; by_cases h₂ : z₂ = x; simp [h₁, h₂, hfinj.eq_iff, key, key.symm], },
   { intro z,
     split_ifs with hz,
     { rwa hz },
