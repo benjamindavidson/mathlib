@@ -47,29 +47,6 @@ using `map_swap` as a definition, and does not require `has_neg N`.
 meta def tactic.interactive.propagate_tags' : tactic.interactive.itactic → tactic unit :=
 tactic.interactive.propagate_tags
 
--- TODO: move
-section to_move
-
-open_locale big_operators
-
-@[simp, to_additive]
-lemma finset.prod_filter_univ_exists_eq {α β γ : Type*}
-  [fintype α] [fintype β] [comm_monoid γ]
-  (f : α → β) (h : function.injective f) {_ : decidable_pred (λ (b : β), ∃ a, f a = b)} (g : β → γ) :
-  ∏ x in finset.filter (λ (b : β), ∃ a, f a = b) finset.univ, g x = ∏ a, g (f a) :=
-begin
-  haveI := classical.dec_eq β,
-  rw [finset.univ_filter_exists f, finset.prod_image (λ x _ y _ (z : f x = f y), h z)],
-end
-
-lemma finset.sum_filter_univ_mem_monoid_hom_range {α β γ : Type*}
-  [fintype α] [fintype β] [group α] [group β] [add_comm_monoid γ]
-  (f : α →* β) (h : function.injective f) {_ : decidable_pred (λ (b : β), b ∈ f.range)} (g : β → γ) :
-  ∑ x in finset.filter (λ (b : β), b ∈ f.range) finset.univ, g x = ∑ a, g (f a) :=
-finset.sum_filter_univ_exists_eq f h g
-
-end to_move
-
 -- semiring / add_comm_monoid
 variables {R : Type*} [semiring R]
 variables {M : Type*} [add_comm_monoid M] [semimodule R M]
@@ -695,7 +672,7 @@ begin
   -- unfold the quotient mess
   dsimp only [quotient.lift_on'_mk'],
   conv in (_ = quotient.mk' _) { change quotient.mk' _ = quotient.mk' _, },
-  simp_rw (iff.intro quotient.exact' quotient.sound'),
+  simp_rw quotient.eq',
   dunfold setoid.r quotient_group.left_rel,
   simp only,
 
@@ -707,27 +684,31 @@ begin
   simp only,
   rw finset.image_filter,
   simp only [function.comp, mul_inv_rev, inv_mul_cancel_right, subgroup.inv_mem_iff],
-  rw finset.sum_image (λ x hx y hy, (mul_right_inj σ).mp),
-  rw finset.sum_filter_univ_mem_monoid_hom_range (perm.sum_congr_hom ιa ιb) perm.sum_congr_hom_injective _,
-  rw multilinear_map.dom_coprod_alternization_coe,
-  rw [←finset.sum_product', finset.univ_product_univ],
+  simp only [monoid_hom.mem_range], -- needs to be separate from the above `simp only`
+  rw [finset.filter_congr_decidable,
+    finset.univ_filter_exists (perm.sum_congr_hom ιa ιb),
+    finset.sum_image (λ x _ y _ (h : _ = _), mul_right_injective _ h),
+    finset.sum_image (λ x _ y _ (h : _ = _), perm.sum_congr_hom_injective h),
+    multilinear_map.dom_coprod_alternization_coe,
+    ←finset.sum_product', finset.univ_product_univ],
 
-  simp_rw [multilinear_map.dom_dom_congr_mul, perm.sign_mul],
-  -- pull out the other pair of sums and smuls, by rewriting `dom_dom_congr` into bundled
-  -- versions for which the lemmas we care about apply (and then undo the rewrites).
-  simp_rw [←multilinear_map.dom_dom_congr_equiv_apply, ←add_equiv.coe_to_add_monoid_hom,
-    add_monoid_hom.map_sum, add_monoid_hom.map_int_module_smul,
-    add_equiv.coe_to_add_monoid_hom, multilinear_map.dom_dom_congr_equiv_apply],
-  rw [finset.smul_sum],
-
+  rw [←multilinear_map.dom_dom_congr_equiv_apply, add_equiv.map_sum, finset.smul_sum],
   congr' 1,
   ext1 ⟨al, ar⟩,
 
+  -- pull out the other pair of smuls, by rewriting to `add_monoid_hom` and back
+  rw [←add_equiv.coe_to_add_monoid_hom, add_monoid_hom.map_int_module_smul,
+    add_monoid_hom.map_int_module_smul,
+    add_equiv.coe_to_add_monoid_hom, multilinear_map.dom_dom_congr_equiv_apply],
+
+  dsimp only,
+
   -- pick up the pieces
-  simp_rw [perm.sign_mul, units.coe_mul, perm.sum_congr_hom_apply ιa ιb (al, ar),
-    multilinear_map.dom_coprod_dom_dom_congr_sum_congr, perm.sign_sum_congr],
-  simp only [multilinear_map.smul_apply, units.coe_mul, ←mul_smul],
-  congr' 3,  -- `congr` doesn't work here
+  rw [multilinear_map.dom_dom_congr_mul, perm.sign_mul, units.coe_mul,
+    perm.sum_congr_hom_apply, multilinear_map.dom_coprod_dom_dom_congr_sum_congr,
+    perm.sign_sum_congr, units.coe_mul, ←mul_smul ↑al.sign ↑ar.sign, ←mul_smul],
+  -- resolve typeclass diamonds in `has_scalar`. `congr` alone seems to make a wrong turn.
+  congr' 3,
 end
 
 /-- Taking the `multilinear_map.alternatization` of the `multilinear_map.dom_coprod` of two
@@ -744,9 +725,9 @@ lemma multilinear_map.dom_coprod_alternization_eq
     .alternatization =
     ((fintype.card ιa).factorial * (fintype.card ιb).factorial) • a.dom_coprod b :=
 begin
-  rw [multilinear_map.dom_coprod_alternization, coe_alternatization, coe_alternatization, mul_smul],
-  rw [←dom_coprod'_apply, ←dom_coprod'_apply, ←tensor_product.smul_tmul', tensor_product.tmul_smul],
-  rw [linear_map.map_smul_of_tower dom_coprod', linear_map.map_smul_of_tower dom_coprod'],
+  rw [multilinear_map.dom_coprod_alternization, coe_alternatization, coe_alternatization, mul_smul,
+    ←dom_coprod'_apply, ←dom_coprod'_apply, ←tensor_product.smul_tmul', tensor_product.tmul_smul,
+    linear_map.map_smul_of_tower dom_coprod', linear_map.map_smul_of_tower dom_coprod'],
   -- typeclass resolution is a little confused here
   apply_instance, apply_instance,
 end
