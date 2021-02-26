@@ -552,14 +552,14 @@ begin
   all_goals {
     apply σ.induction_on' (λ σ, _),
     rintro _, },
-  { dsimp only [quotient.lift_on'_beta, quotient.map'_mk', mul_action.quotient.smul_mk],
+  { dsimp only [quotient.lift_on'_mk', quotient.map'_mk', mul_action.quotient.smul_mk],
     rw [perm.sign_mul, perm.sign_swap hij],
     simp only [one_mul, units.neg_mul, function.comp_app, neg_smul, perm.coe_mul,
       units.coe_neg, multilinear_map.smul_apply, multilinear_map.neg_apply,
       multilinear_map.dom_dom_congr_apply, multilinear_map.dom_coprod_apply],
     convert add_right_neg _;
     { ext k, rw equiv.apply_swap_eq_self hv }, },
-  { dsimp only [quotient.lift_on'_beta, quotient.map'_mk', multilinear_map.smul_apply,
+  { dsimp only [quotient.lift_on'_mk', quotient.map'_mk', multilinear_map.smul_apply,
       multilinear_map.dom_dom_congr_apply, multilinear_map.dom_coprod_apply],
     apply mt,
     intro hσ,
@@ -642,7 +642,7 @@ tensor_product.lift $ by
     congr,
     ext σ,
     apply σ.induction_on' (λ σ, _),
-    simp only [quotient.lift_on'_beta, coe_add, coe_smul, multilinear_map.smul_apply,
+    simp only [quotient.lift_on'_mk', coe_add, coe_smul, multilinear_map.smul_apply,
       ←multilinear_map.dom_coprod'_apply],
     simp only [tensor_product.add_tmul, ←tensor_product.smul_tmul',
       tensor_product.tmul_add, tensor_product.tmul_smul, linear_map.map_add, linear_map.map_smul],
@@ -707,7 +707,7 @@ begin
   apply σ.induction_on' (λ σ, _),
 
   -- unfold the quotient mess
-  dsimp only [quotient.lift_on'_beta],
+  dsimp only [quotient.lift_on'_mk'],
   conv in (_ = quotient.mk' _) { change quotient.mk' _ = quotient.mk' _, },
   simp_rw (iff.intro quotient.exact' quotient.sound'),
   dunfold setoid.r quotient_group.left_rel,
