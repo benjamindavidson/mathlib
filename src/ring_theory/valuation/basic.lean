@@ -388,3 +388,115 @@ by { rw supp_quot, exact ideal.map_quotient_self _ }
 end supp -- end of section
 
 end valuation
+
+section
+
+variables {Γ : Type*} [linear_ordered_comm_group Γ]
+
+instance : linear_ordered_comm_group_with_zero (with_zero Γ) :=
+{ zero_le_one := with_zero.zero_le 1,
+  .. (with_zero.ordered_comm_monoid),
+  .. (infer_instance : linear_order (with_zero Γ)),
+  .. (infer_instance : comm_group_with_zero (with_zero Γ)) }
+
+end
+
+section additive
+
+variables {Γ : Type*} [ring R] [linear_ordered_add_comm_group Γ]
+
+instance : linear_ordered_comm_group (multiplicative Γ) :=
+{ .. multiplicative.ordered_comm_group,
+  .. multiplicative.linear_order }
+
+def top_to_zero : (with_top Γ) → (with_zero (multiplicative (order_dual Γ)))
+| ⊤ := 0
+| (some a) := ↑(multiplicative.of_add (order_dual.to_dual a))
+
+@[simp]
+lemma top_to_zero_top : top_to_zero (⊤ : with_top Γ) = 0 := rfl
+
+@[simp]
+lemma top_to_zero_none : top_to_zero (none : with_top Γ) = 0 := rfl
+
+@[simp]
+lemma top_to_zero_some (a : Γ) :
+  top_to_zero (some a) =↑(multiplicative.of_add (order_dual.to_dual a)) := rfl
+
+@[simp]
+lemma top_to_zero_zero : top_to_zero (0 : with_top Γ) = 1 := rfl
+
+@[simp]
+lemma top_to_zero_le {x y : with_top Γ} : top_to_zero x ≤ top_to_zero y ↔ y ≤ x :=
+begin
+  cases x,
+  { simp },
+  cases y,
+  { simp },
+  { simp only [with_zero.coe_le_coe, top_to_zero_some, with_top.some_le_some],
+    refl }
+end
+
+@[simp]
+lemma top_to_zero_add {x y : with_top Γ} : top_to_zero (x + y) = top_to_zero x * top_to_zero y :=
+begin
+  cases x,
+  { simp only [with_zero.zero_mul, top_to_zero_none],
+    refl },
+  cases y,
+  { simp only [with_zero.mul_zero, top_to_zero_none],
+    refl },
+  { simp only [with_zero.coe_le_coe, top_to_zero_some, with_top.some_le_some],
+    refl }
+end
+
+variables (R) (Γ)
+
+/-- The type of Γ-valued additive valuations on R. -/
+@[nolint has_inhabited_instance]
+structure add_valuation :=
+(to_fun : R → with_top Γ)
+(to_fun_eq_top : ∀ x, to_fun x = ⊤ ↔ x = 0)
+(apply_one' : to_fun 1 = 0)
+(map_add' : ∀ x y, min (to_fun x) (to_fun y) ≤ to_fun (x + y))
+(map_mul' : ∀ x y, to_fun (x * y) = to_fun x + to_fun y)
+
+namespace add_valuation
+
+/-- An additive valuation is coerced to the underlying function `R → with_top Γ`. -/
+instance : has_coe_to_fun (add_valuation R Γ) := { F := λ _, R → with_top Γ,
+  coe := add_valuation.to_fun }
+
+variables {R} {Γ} (v : add_valuation R Γ) {x y z : R}
+
+@[simp] lemma apply_zero : v 0 = ⊤ := (v.to_fun_eq_top 0).2 rfl
+@[simp] lemma apply_one : v 1 = 0 := v.apply_one'
+@[simp] lemma map_mul  : ∀ x y, v (x * y) = v x + v y := v.map_mul'
+@[simp] lemma map_add  : ∀ x y, min (v x) (v y) ≤ v (x + y) := v.map_add'
+
+/-- Given an order-reversing homomorphism that take the additive structure of `Γ` to the
+  multiplicative structure of `Γ₀`, we turn an `add_valuation` into a `valuation`. -/
+def map_to_valuation (v : add_valuation R Γ) (f : with_top Γ → Γ₀)
+  (h0 : f ⊤ = 0) (h1 : f 0 = 1) (hle : ∀ {x y}, f x ≤ f y ↔ y ≤ x)
+  (hadd : ∀ {x y}, f (x + y) = f x * f y) :
+  valuation R Γ₀ :=
+{ to_fun := λ r : R, f (v r),
+  map_zero' := by rw [apply_zero, h0],
+  map_one' := by rw [apply_one, h1],
+  map_add' := λ x y, begin
+    apply le_trans (hle.2 (v.map_add x y)),
+    rw [le_max_iff, hle, hle, ← min_le_iff],
+    exact le_refl _,
+  end,
+  map_mul' := λ x y, by rw [v.map_mul, hadd] }
+
+/-- Turns an `add_valuation` into a `valuation` to the value group
+  `(with_zero (multiplicative (order_dual Γ)))`. -/
+def to_valuation (v : add_valuation R Γ) :
+  valuation R (with_zero (multiplicative (order_dual Γ))) :=
+v.map_to_valuation top_to_zero top_to_zero_top top_to_zero_zero
+  (λ x y, by simp) (λ x y, by simp)
+
+end add_valuation
+
+end additive
