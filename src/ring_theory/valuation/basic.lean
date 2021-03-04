@@ -43,7 +43,7 @@ on R / J = `ideal.quotient J` is `on_quot v h`.
 * `valuation.is_equiv`, the heterogeneous equivalence relation on valuations
 * `valuation.supp`, the support of a valuation
 
-* `add_valuation R Γ₀`, the type of additive valuations on `R` with values in a 
+* `add_valuation R Γ₀`, the type of additive valuations on `R` with values in a
   linearly ordered additive commutative group with a top element, `Γ₀`.
 
 ## Implementation Details
@@ -437,10 +437,31 @@ instance : has_coe_to_fun (add_valuation R Γ₀) := { F := λ _, R → Γ₀, c
 
 variables {R} {Γ₀} (v : add_valuation R Γ₀) {x y z : R}
 
+section
+
+variables (f : R → Γ₀) (h0 : f 0 = ⊤) (h1 : f 1 = 0)
+variables (hadd : ∀ x y, min (f x) (f y) ≤ f (x + y)) (hmul : ∀ x y, f (x * y) = f x + f y)
+
+/-- An alternate constructor of `add_valuation`, that doesn't reference
+  `multiplicative (order_dual Γ₀)` -/
+def of : add_valuation R Γ₀ :=
+{ to_fun := f,
+  map_one' := h1,
+  map_zero' := h0,
+  map_add' := hadd,
+  map_mul' := hmul }
+
+variables {h0} {h1} {hadd} {hmul} {r : R}
+
+@[simp]
+theorem of_apply : (of f h0 h1 hadd hmul) r = f r := rfl
+
+end
+
 @[simp] lemma map_zero : v 0 = ⊤ := v.map_zero
 @[simp] lemma map_one  : v 1 = 0 := v.map_one
 @[simp] lemma map_mul  : ∀ x y, v (x * y) = v x + v y := v.map_mul
-@[simp] lemma map_add  : ∀ x y, min (v x) (v y) ≤ v (x + y):= v.map_add
+@[simp] lemma map_add  : ∀ x y, min (v x) (v y) ≤ v (x + y) := v.map_add
 
 lemma map_le_add {x y g} (hx : g ≤ v x) (hy : g ≤ v y) : g ≤ v (x + y) := v.map_add_le hx hy
 
@@ -545,15 +566,7 @@ lemma ne_top (h : v₁.is_equiv v₂) {r : R} :
   v₁ r ≠ ⊤ ↔ v₂ r ≠ ⊤ :=
 h.ne_zero
 
-end is_equiv -- end of namespace
-
-section
-
--- is_equiv_of_strict_mono has trouble
-
--- is_equiv_of_val_le_one needs a group
-
-end
+end is_equiv
 
 section supp
 variables [comm_ring R]
